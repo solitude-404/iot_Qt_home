@@ -1,0 +1,50 @@
+# 1. Keil MDK 编译输出文件夹
+Objects/
+Listings/
+RTE/
+RVMDK/
+Debug/
+Release/
+
+# 2. 工程临时缓存、窗口布局文件
+*.uvguix.*
+*.uvoptx
+*.uvopt
+*.dbgconf
+*.ini
+
+# 3. 编译产物、调试文件
+*.axf
+*.elf
+*.hex
+*.bin
+*.srec
+*.map
+*.lst
+*.i
+*.crf
+*.d
+*.o
+*.obj
+*.dep
+*.bak
+*.log
+
+# 4. 烧录、调试相关文件
+*.scvd
+*.jlink
+*.flash
+*.sct
+*.dbg
+*.gdbl
+*.trace
+
+# 5. 系统无关文件
+.DS_Store
+Thumbs.db
+__pycache__/
+*.tmp
+*.temp
+
+# 6. 可选：屏蔽本地数据库（如果你有本地测试db）
+# *.db
