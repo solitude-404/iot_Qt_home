@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/camera.svg</file>
+        <file>images/fan.svg</file>
+        <file>images/fire.svg</file>
+        <file>images/icon_aircon_off.svg</file>
+        <file>images/icon_aircon_on.svg</file>
+        <file>images/icon_curtain_close.svg</file>
+        <file>images/icon_curtain_open.svg</file>
+        <file>images/icon_door_close.svg</file>
+        <file>images/icon_door_open.svg</file>
+        <file>images/icon_light_off.svg</file>
+        <file>images/icon_light_on.svg</file>
+        <file>images/off.svg</file>
+        <file>images/on.svg</file>
+        <file>images/temp.svg</file>
+    </qresource>
+</RCC>

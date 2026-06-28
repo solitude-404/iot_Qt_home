@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1024</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1024</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1024</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow {
+    background-color: #F4F7FC;
+}
+
+/* ------------------------------
+   卡片样式（去掉box-shadow，改用边框+背景区分）
+------------------------------ */
+QFrame#cardSystem, 
+QFrame#cardTime, 
+QFrame#cardConnection,
+QFrame#cardFan, 
+QFrame#cardHeat, 
+QFrame#cardThreshold {
+    background-color: #FFFFFF;
+    border-radius: 14px;
+    border: 1px solid #E6EBF2;
+}
+
+QFrame#tempCard, 
+QFrame#humiCard {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E6EBF2;
+}
+
+/* 卡片悬浮效果：边框变蓝 + 背景轻微变亮 */
+QFrame#cardSystem:hover, 
+QFrame#cardTime:hover, 
+QFrame#cardConnection:hover,
+QFrame#cardFan:hover, 
+QFrame#cardHeat:hover, 
+QFrame#cardThreshold:hover,
+QFrame#tempCard:hover, 
+QFrame#humiCard:hover {
+    background-color: #F8FBFF;
+    border: 1px solid #4FACFE;
+}
+
+/* ------------------------------
+   你的 CheckBox 开关 —— 完全不动！
+------------------------------ */
+QCheckBox {
+    spacing: 0;
+}
+QCheckBox::indicator {
+    width: 52px;
+    height: 26px;
+}
+QCheckBox::indicator:unchecked {
+    image: url(:/images/off.svg);
+}
+QCheckBox::indicator:checked {
+    image: url(:/images/on.svg);
+}
+
+/* ------------------------------
+   按钮美化：Qt 原生支持的效果
+------------------------------ */
+QPushButton {
+    background-color: #4FACFE;
+    color: white;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-weight: bold;
+    border: none;
+}
+
+QPushButton:hover {
+    background-color: #00F2FE;
+}
+
+QPushButton:pressed {
+    background-color: #3B9BEE;
+}
+
+/* ------------------------------
+   标签文字美化
+------------------------------ */
+QLabel {
+    color: #333333;
+}
+
+QLabel#labelTitle {
+    font-size: 14px;
+    color: #666666;
+}
+
+QLabel#labelValue {
+    font-size: 24px;
+    font-weight: bold;
+    color: #222222;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QFrame" name="leftPanel">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>240</width>
+      <height>600</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="lblLogo_2">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>0</y>
+       <width>171</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>SMART HOME</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="lblTimeDisplay">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>50</y>
+       <width>121</width>
+       <height>19</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>2026-05-19</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>220</y>
+       <width>121</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>一键切换模式</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnComfortMode">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>270</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>舒适模式</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnSleepMode">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>330</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>睡眠模式</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnCinemaMode">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>390</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>观影模式</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnManualMode">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>450</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>手动模式</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnNavTempHumi">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>100</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>温湿度检测</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnNavControl">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>157</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>全屋控制</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QFrame" name="rightPanel">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>0</y>
+      <width>781</width>
+      <height>600</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QStackedWidget" name="stackedWidget">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>520</width>
+       <height>600</height>
+      </rect>
+     </property>
+     <property name="currentIndex">
+      <number>4</number>
+     </property>
+     <widget class="QWidget" name="homepage"/>
+     <widget class="QWidget" name="temp">
+      <widget class="QChartView" name="chartViewWidget" native="true">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>270</y>
+         <width>471</width>
+         <height>221</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="lblStatusLed">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>30</y>
+         <width>91</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>○ 硬件未连接</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnConnect">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>20</y>
+         <width>93</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>连接硬件</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="cmbSerialPorts">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>20</y>
+         <width>121</width>
+         <height>25</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QFrame" name="cardFan">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>100</y>
+         <width>130</width>
+         <height>130</height>
+        </rect>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QLabel" name="lblFanIcon">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>30</y>
+          <width>60</width>
+          <height>60</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>9</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="chkFanSwitch">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>100</y>
+          <width>51</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QFrame" name="cardHeat">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>100</y>
+         <width>130</width>
+         <height>130</height>
+        </rect>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QLabel" name="lblFireIcon">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>30</y>
+          <width>60</width>
+          <height>60</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="chkHeatSwitch">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>100</y>
+          <width>51</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QLabel" name="lblTempMin">
+       <property name="geometry">
+        <rect>
+         <x>450</x>
+         <y>70</y>
+         <width>31</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>TextLabel</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>420</x>
+         <y>70</y>
+         <width>21</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>~</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>310</x>
+         <y>70</y>
+         <width>69</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>温度阈值：</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="lblTempMax">
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>70</y>
+         <width>31</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>TextLabel</string>
+       </property>
+      </widget>
+      <widget class="QFrame" name="cardThreshold">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>100</y>
+         <width>171</width>
+         <height>131</height>
+        </rect>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="1">
+         <widget class="QPushButton" name="btnTempMaxDown">
+          <property name="text">
+           <string>MAX-</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="btnTempMinDown">
+          <property name="text">
+           <string>MIN-</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="btnTempMinUp">
+          <property name="text">
+           <string>MIN+</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="btnTempMaxUp">
+          <property name="text">
+           <string>MAX+</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="history">
+      <widget class="QPushButton" name="btnBackToEnv">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>457</y>
+         <width>121</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>返回温湿度页</string>
+       </property>
+      </widget>
+      <widget class="QTableWidget" name="tableHistory">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>80</y>
+         <width>421</width>
+         <height>351</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="camera"/>
+     <widget class="QWidget" name="SQLhistory"/>
+    </widget>
+    <widget class="QFrame" name="lastPanel">
+     <property name="geometry">
+      <rect>
+       <x>520</x>
+       <y>0</y>
+       <width>284</width>
+       <height>600</height>
+      </rect>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <widget class="QFrame" name="humiCard">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>300</y>
+        <width>200</width>
+        <height>200</height>
+       </rect>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <widget class="QLabel" name="lblCurrentHumi">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>0</y>
+         <width>69</width>
+         <height>61</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>19</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>50.0</string>
+       </property>
+      </widget>
+      <widget class="GaugeWidget" name="gaugeHumi" native="true">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>50</y>
+         <width>120</width>
+         <height>80</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QFrame" name="tempCard">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>70</y>
+        <width>200</width>
+        <height>200</height>
+       </rect>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <widget class="QLabel" name="lblCurrentTemp">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>0</y>
+         <width>101</width>
+         <height>61</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>19</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>25.0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="lblTempTargetRange">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>160</y>
+         <width>81</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string> 20°C - 30°C</string>
+       </property>
+      </widget>
+      <widget class="GaugeWidget" name="gaugeTemp" native="true">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>60</y>
+         <width>120</width>
+         <height>80</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QCheckBox" name="switchAlarm">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>30</y>
+        <width>201</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>蜂鸣器警报</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnHistory">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>510</y>
+        <width>121</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>查看历史数据</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1024</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>QtCharts/QChartView.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GaugeWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">gaugewidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
