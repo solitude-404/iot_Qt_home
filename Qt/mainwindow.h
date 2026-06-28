@@ -7,6 +7,8 @@
 #include <QtCharts>
 #include <QPropertyAnimation>
 #include <QGraphicsRotation>
+#include "homepage.h"
+#include "camerawidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,6 +35,8 @@ private slots:
     void on_switchAlarm_toggled(bool checked);
     void initHistoryTable();
     void addHistory(double temp, double humi);
+    void loadOperationLogs();
+    void loadTempHistory();
     // 模式切换（就加这4行）
     void on_btnComfortMode_clicked();
     void on_btnSleepMode_clicked();
@@ -59,6 +63,9 @@ private:
     bool coolerOn = false;  // 制冷继电器状态
     QWidget *gaugeTemp;
     QWidget *gaugeHumi;
+    HomePage *homePage;
+    CameraWidget *cameraPage;
+    QDateTime lastHistoryTime;                // 上次记录历史数据的时间
 
     void drawGauge(QWidget *widget, double value, double min, double max, QString unit, QColor color);
 

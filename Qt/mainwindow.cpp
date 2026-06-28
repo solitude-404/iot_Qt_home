@@ -3,11 +3,17 @@
 #include "gaugewidget.h"
 #include "homepage.h"
 #include "camerawidget.h"
+#include "dbhelper.h"
 #include <QMessageBox>
 #include <QDateTime>
 #include <QSerialPortInfo>
 #include <QDebug>
 #include <QtCharts>
+#include <QList>
+#include <QMap>
+#include <QToolTip>
+#include <QCursor>
+#include <QThread>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -77,50 +83,59 @@ MainWindow::MainWindow(QWidget *parent)
     // 初始化历史表格（只加这一行）
     initHistoryTable();
     connect(ui->btnHistory, &QPushButton::clicked, [=](){
-        ui->stackedWidget->setCurrentIndex(3);
+        loadTempHistory();
+        ui->stackedWidget->setCurrentWidget(ui->tempHistory);
     });
     connect(ui->btnBackToEnv, &QPushButton::clicked, [=](){
-        ui->stackedWidget->setCurrentIndex(2);
+        ui->stackedWidget->setCurrentWidget(ui->temp);
     });
-    connect(ui->btnNavControl, &QPushButton::clicked, [=](){
-        ui->stackedWidget->setCurrentIndex(0);
+    connect(ui->btnBackFromTempHistory, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentWidget(ui->temp);
+    });
+    connect(ui->btnToRealtimeData, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentWidget(ui->history);
     });
     connect(ui->btnNavTempHumi, &QPushButton::clicked, [=](){
-            ui->stackedWidget->setCurrentIndex(2);
+        ui->stackedWidget->setCurrentWidget(ui->temp);
+    });
+    connect(ui->btnNavLogs, &QPushButton::clicked, [=](){
+        loadOperationLogs();
+        ui->stackedWidget->setCurrentWidget(ui->operationLogs);
     });
 
 
     // ======================
-    // 创建首页（索引0）
+    // 创建首页
     // ======================
-    HomePage *homePage = new HomePage(this);
-    ui->stackedWidget->insertWidget(0, homePage);
+    homePage = new HomePage(this);
+    ui->stackedWidget->addWidget(homePage);
+
+    connect(ui->btnNavControl, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentWidget(homePage);
+    });
+    connect(ui->btnBackFromLogs, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentWidget(homePage);
+    });
 
     // ======================
-    // 首页跳转绑定（两个都补上！）
+    // 首页跳转绑定
     // ======================
-    // 跳 温湿度检测页（索引1）
     connect(homePage, &HomePage::goToTempPage, this, [=](){
-        ui->stackedWidget->setCurrentIndex(2);
+        ui->stackedWidget->setCurrentWidget(ui->temp);
     });
 
-    // 跳 摄像头页（索引3）
     connect(homePage, &HomePage::goToCameraPage, this, [=](){
-        ui->stackedWidget->setCurrentIndex(1);
-    });
-     ui->stackedWidget->setCurrentIndex(0);
-
-    // 构造函数里加
-    CameraWidget *cameraPage = new CameraWidget(this);
-    ui->stackedWidget->addWidget(cameraPage);
-    // 首页跳摄像头
-    connect(homePage, &HomePage::goToCameraPage, [=](){
         ui->stackedWidget->setCurrentWidget(cameraPage);
     });
+    ui->stackedWidget->setCurrentWidget(homePage);
+
+    // 构造函数里加
+    cameraPage = new CameraWidget(this);
+    ui->stackedWidget->addWidget(cameraPage);
 
     // 返回主页
     connect(cameraPage, &CameraWidget::backToHome, [=](){
-        ui->stackedWidget->setCurrentIndex(0);
+        ui->stackedWidget->setCurrentWidget(homePage);
     });
 
 
@@ -233,6 +248,31 @@ void MainWindow::onConnectBtnClicked()
             ui->btnConnect->setText("断开硬件");
             ui->lblStatusLed->setText("● 已连接51系统");
             ui->lblStatusLed->setStyleSheet("color:#2ECC71;font-weight:bold;");
+
+            QString savedMax = DBHelper::getConfig("tempMax", "");
+            QString savedMin = DBHelper::getConfig("tempMin", "");
+
+            if (!savedMax.isEmpty() && !savedMin.isEmpty()) {
+                double targetMax = savedMax.toDouble();
+                double targetMin = savedMin.toDouble();
+
+                for (int i = 0; i < targetMax - 30; i++) {
+                    serial->write("1");
+                    QThread::msleep(50);
+                }
+                for (int i = 0; i < 30 - targetMax; i++) {
+                    serial->write("2");
+                    QThread::msleep(50);
+                }
+                for (int i = 0; i < targetMin - 20; i++) {
+                    serial->write("a");
+                    QThread::msleep(50);
+                }
+                for (int i = 0; i < 20 - targetMin; i++) {
+                    serial->write("b");
+                    QThread::msleep(50);
+                }
+            }
         } else {
             QMessageBox::critical(this, "错误", "无法打开串口");
         }
@@ -290,6 +330,10 @@ void MainWindow::readSerialData()
 
         // 更新界面
         updateThresholdUI();
+
+        // 保存到数据库
+        DBHelper::setConfig("tempMax", QString::number(tempMax));
+        DBHelper::setConfig("tempMin", QString::number(tempMin));
     }
 
     // ================================
@@ -312,7 +356,28 @@ void MainWindow::readSerialData()
     double temp = ui->lblCurrentTemp->text().toDouble();
     double humi = ui->lblCurrentHumi->text().toDouble();
     // 示例：你解析出温度 temp，湿度 humi 后
-    addHistory(temp, humi);
+
+    // 实时表格每次都更新
+    QString time = QDateTime::currentDateTime().toString("HH:mm:ss");
+    ui->tableHistory->insertRow(0);
+    ui->tableHistory->setItem(0, 0, new QTableWidgetItem(QString::number(1)));
+    ui->tableHistory->setItem(0, 1, new QTableWidgetItem(QString::number(temp, 'f', 1)));
+    ui->tableHistory->setItem(0, 2, new QTableWidgetItem(QString::number(humi, 'f', 1)));
+    ui->tableHistory->setItem(0, 3, new QTableWidgetItem(time));
+    for(int i=0; i<ui->tableHistory->rowCount(); i++){
+        ui->tableHistory->setItem(i, 0, new QTableWidgetItem(QString::number(i+1)));
+    }
+    if(ui->tableHistory->rowCount() > 50){
+        ui->tableHistory->removeRow(ui->tableHistory->rowCount()-1);
+    }
+
+    // 数据库历史记录每1分钟写入一次
+    QDateTime now = QDateTime::currentDateTime();
+    if (lastHistoryTime.isNull() || lastHistoryTime.secsTo(now) >= 60) {
+        DBHelper::addTempHistory(temp, humi);
+        lastHistoryTime = now;
+    }
+
     ui->gaugeTemp->setValue(temp);
     ui->gaugeHumi->setValue(humi);
 
@@ -380,21 +445,25 @@ void MainWindow::updateRelayUI()
 void MainWindow::on_btnTempMaxUp_clicked()
 {
     if (serial->isOpen()) serial->write("1");
+    DBHelper::addOperationLog("阈值调整", QString("温度上限调高至%1℃").arg(tempMax + 1), "成功");
 }
 
 void MainWindow::on_btnTempMaxDown_clicked()
 {
     if (serial->isOpen()) serial->write("2");
+    DBHelper::addOperationLog("阈值调整", QString("温度上限调低至%1℃").arg(tempMax - 1), "成功");
 }
 
 void MainWindow::on_btnTempMinUp_clicked()
 {
     if (serial->isOpen()) serial->write("a");
+    DBHelper::addOperationLog("阈值调整", QString("温度下限调高至%1℃").arg(tempMin + 1), "成功");
 }
 
 void MainWindow::on_btnTempMinDown_clicked()
 {
     if (serial->isOpen()) serial->write("b");
+    DBHelper::addOperationLog("阈值调整", QString("温度下限调低至%1℃").arg(tempMin - 1), "成功");
 }
 
 void MainWindow::on_switchAlarm_toggled(bool checked)
@@ -404,13 +473,14 @@ void MainWindow::on_switchAlarm_toggled(bool checked)
         return;
     }
 
-    // 发送 e 指令切换警报
     serial->write("e");
 
     if (checked) {
         ui->switchAlarm->setText("蜂鸣器警报：已开启");
+        DBHelper::addOperationLog("警报", "开启蜂鸣器警报", "成功");
     } else {
         ui->switchAlarm->setText("蜂鸣器警报：已关闭");
+        DBHelper::addOperationLog("警报", "关闭蜂鸣器警报", "成功");
     }
 }
 
@@ -446,6 +516,115 @@ void MainWindow::addHistory(double temp, double humi)
     if(ui->tableHistory->rowCount() > 50){
         ui->tableHistory->removeRow(ui->tableHistory->rowCount()-1);
     }
+
+    // 同步写入数据库
+    DBHelper::addTempHistory(temp, humi);
+}
+
+void MainWindow::loadOperationLogs()
+{
+    ui->tableOperationLogs->setColumnCount(6);
+    ui->tableOperationLogs->setHorizontalHeaderLabels({"序号", "设备名称", "操作类型", "操作结果", "操作人", "操作时间"});
+    ui->tableOperationLogs->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableOperationLogs->setRowCount(0);
+    ui->tableOperationLogs->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableOperationLogs->setMouseTracking(true);
+    ui->tableOperationLogs->show();
+
+    static bool connected = false;
+    if (!connected) {
+        connect(ui->tableOperationLogs, &QTableWidget::entered, [=](const QModelIndex &index){
+            QString text = index.data().toString();
+            if (!text.isEmpty()) {
+                QToolTip::showText(QCursor::pos(), text);
+            }
+        });
+        connected = true;
+    }
+
+    QList<QMap<QString, QVariant>> logs;
+    if (DBHelper::getOperationLogs(logs)) {
+        int row = 0;
+        for (const QMap<QString, QVariant>& log : logs) {
+            ui->tableOperationLogs->insertRow(row);
+
+            QString opName = log["operation"].toString();
+            QString time = log["create_time"].toString();
+            QString deviceName = log["device_name"].toString();
+            QString result = log["result"].toString();
+            QString operatorName = log["operator_name"].toString();
+
+            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(row + 1));
+            QTableWidgetItem *item2 = new QTableWidgetItem(deviceName);
+            QTableWidgetItem *item3 = new QTableWidgetItem(opName);
+            QTableWidgetItem *item4 = new QTableWidgetItem(result);
+            QTableWidgetItem *item5 = new QTableWidgetItem(operatorName);
+            QTableWidgetItem *item6 = new QTableWidgetItem(time);
+
+            item2->setTextAlignment(Qt::AlignCenter);
+            item3->setTextAlignment(Qt::AlignCenter);
+            item4->setTextAlignment(Qt::AlignCenter);
+            item5->setTextAlignment(Qt::AlignCenter);
+            item6->setTextAlignment(Qt::AlignCenter);
+
+            ui->tableOperationLogs->setItem(row, 0, item1);
+            ui->tableOperationLogs->setItem(row, 1, item2);
+            ui->tableOperationLogs->setItem(row, 2, item3);
+            ui->tableOperationLogs->setItem(row, 3, item4);
+            ui->tableOperationLogs->setItem(row, 4, item5);
+            ui->tableOperationLogs->setItem(row, 5, item6);
+            row++;
+        }
+    }
+}
+
+void MainWindow::loadTempHistory()
+{
+    ui->tableTempHistory->setColumnCount(4);
+    ui->tableTempHistory->setHorizontalHeaderLabels({"序号", "温度(℃)", "湿度(%)", "时间"});
+    ui->tableTempHistory->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableTempHistory->setRowCount(0);
+    ui->tableTempHistory->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableTempHistory->setMouseTracking(true);
+    ui->tableTempHistory->show();
+
+    static bool tempHistoryConnected = false;
+    if (!tempHistoryConnected) {
+        connect(ui->tableTempHistory, &QTableWidget::entered, [=](const QModelIndex &index){
+            QString text = index.data().toString();
+            if (!text.isEmpty()) {
+                QToolTip::showText(QCursor::pos(), text);
+            }
+        });
+        tempHistoryConnected = true;
+    }
+
+    QList<QMap<QString, QVariant>> records;
+    if (DBHelper::getTempHistory(records)) {
+        int row = 0;
+        for (const QMap<QString, QVariant>& record : records) {
+            ui->tableTempHistory->insertRow(row);
+
+            double temp = record["temperature"].toDouble();
+            double humi = record["humidity"].toDouble();
+            QString time = record["create_time"].toString();
+
+            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(row + 1));
+            QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(temp, 'f', 1));
+            QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(humi, 'f', 1));
+            QTableWidgetItem *item4 = new QTableWidgetItem(time);
+
+            item2->setTextAlignment(Qt::AlignCenter);
+            item3->setTextAlignment(Qt::AlignCenter);
+            item4->setTextAlignment(Qt::AlignCenter);
+
+            ui->tableTempHistory->setItem(row, 0, item1);
+            ui->tableTempHistory->setItem(row, 1, item2);
+            ui->tableTempHistory->setItem(row, 2, item3);
+            ui->tableTempHistory->setItem(row, 3, item4);
+            row++;
+        }
+    }
 }
 
 // ======================
@@ -454,20 +633,24 @@ void MainWindow::addHistory(double temp, double humi)
 void MainWindow::on_btnComfortMode_clicked()
 {
     QMessageBox::information(this, "模式", "✅ 舒适模式已开启\n温度：26℃\n灯光：50%\n窗帘：打开\n电视：关闭");
+    DBHelper::addOperationLog("模式切换", "切换至舒适模式", "成功");
 }
 
 void MainWindow::on_btnSleepMode_clicked()
 {
     QMessageBox::information(this, "模式", "✅ 睡眠模式已开启\n温度：24℃\n灯光：关闭\n窗帘：关闭\n电视：关闭");
+    DBHelper::addOperationLog("模式切换", "切换至睡眠模式", "成功");
 }
 
 void MainWindow::on_btnCinemaMode_clicked()
 {
     QMessageBox::information(this, "模式", "✅ 观影模式已开启\n温度：25℃\n灯光：关闭\n窗帘：关闭\n电视：打开");
+    DBHelper::addOperationLog("模式切换", "切换至观影模式", "成功");
 }
 
 void MainWindow::on_btnManualMode_clicked()
 {
     QMessageBox::information(this, "模式", "✅ 手动模式已开启\n可自由控制灯光、窗帘、空调、电视");
+    DBHelper::addOperationLog("模式切换", "切换至手动模式", "成功");
 }
 

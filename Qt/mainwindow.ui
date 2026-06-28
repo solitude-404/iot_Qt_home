@@ -27,11 +27,19 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
-    background-color: #F4F7FC;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #EEF5FF, stop:0.5 #F0F8FF, stop:1 #E8F4FF);
 }
 
 /* ------------------------------
-   卡片样式（去掉box-shadow，改用边框+背景区分）
+   左侧面板 - 深蓝色
+------------------------------ */
+QFrame#leftPanel {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1E3A5F, stop:0.5 #1A3050, stop:1 #162845);
+    border-radius: 0;
+}
+
+/* ------------------------------
+   毛玻璃卡片样式
 ------------------------------ */
 QFrame#cardSystem, 
 QFrame#cardTime, 
@@ -39,19 +47,19 @@ QFrame#cardConnection,
 QFrame#cardFan, 
 QFrame#cardHeat, 
 QFrame#cardThreshold {
-    background-color: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E6EBF2;
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 16px;
+    border: 1px solid rgba(200, 220, 255, 0.5);
 }
 
 QFrame#tempCard, 
 QFrame#humiCard {
-    background-color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.75);
     border-radius: 16px;
-    border: 1px solid #E6EBF2;
+    border: 1px solid rgba(200, 220, 255, 0.5);
 }
 
-/* 卡片悬浮效果：边框变蓝 + 背景轻微变亮 */
+/* 卡片悬浮效果 */
 QFrame#cardSystem:hover, 
 QFrame#cardTime:hover, 
 QFrame#cardConnection:hover,
@@ -60,12 +68,12 @@ QFrame#cardHeat:hover,
 QFrame#cardThreshold:hover,
 QFrame#tempCard:hover, 
 QFrame#humiCard:hover {
-    background-color: #F8FBFF;
-    border: 1px solid #4FACFE;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(100, 150, 220, 0.6);
 }
 
 /* ------------------------------
-   你的 CheckBox 开关 —— 完全不动！
+   CheckBox 开关
 ------------------------------ */
 QCheckBox {
     spacing: 0;
@@ -82,41 +90,263 @@ QCheckBox::indicator:checked {
 }
 
 /* ------------------------------
-   按钮美化：Qt 原生支持的效果
+   按钮美化 - 统一蓝色系
 ------------------------------ */
 QPushButton {
-    background-color: #4FACFE;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4A90D9, stop:1 #357ABD);
     color: white;
-    border-radius: 6px;
-    padding: 5px 12px;
-    font-weight: bold;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-weight: 600;
     border: none;
 }
 
 QPushButton:hover {
-    background-color: #00F2FE;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5BA0E9, stop:1 #4A90D9);
 }
 
 QPushButton:pressed {
-    background-color: #3B9BEE;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #357ABD, stop:1 #2868A8);
+}
+
+QPushButton:disabled {
+    background-color: #C5D5E8;
+    color: #8BA4C0;
+}
+
+/* 导航按钮样式 */
+QPushButton#btnNavHome,
+QPushButton#btnNavControl,
+QPushButton#btnNavLogs,
+QPushButton#btnNavTempHumi {
+    background-color: transparent;
+    color: #A8C8E8;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 500;
+    border: none;
+    text-align: left;
+}
+
+QPushButton#btnNavHome:hover,
+QPushButton#btnNavControl:hover,
+QPushButton#btnNavLogs:hover,
+QPushButton#btnNavTempHumi:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+QPushButton#btnNavHome:pressed,
+QPushButton#btnNavControl:pressed,
+QPushButton#btnNavLogs:pressed,
+QPushButton#btnNavTempHumi:pressed {
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* ------------------------------
-   标签文字美化
+   模式按钮样式 - 统一蓝色系
+------------------------------ */
+QPushButton#btnComfortMode {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4A90D9, stop:1 #357ABD);
+    color: white;
+}
+QPushButton#btnComfortMode:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5BA0E9, stop:1 #4A90D9);
+}
+
+QPushButton#btnSleepMode {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4A90D9, stop:1 #357ABD);
+    color: white;
+}
+QPushButton#btnSleepMode:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5BA0E9, stop:1 #4A90D9);
+}
+
+QPushButton#btnCinemaMode {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4A90D9, stop:1 #357ABD);
+    color: white;
+}
+QPushButton#btnCinemaMode:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5BA0E9, stop:1 #4A90D9);
+}
+
+QPushButton#btnManualMode {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4A90D9, stop:1 #357ABD);
+    color: white;
+}
+QPushButton#btnManualMode:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5BA0E9, stop:1 #4A90D9);
+}
+
+/* ------------------------------
+   标签文字美化 - 蓝色系
 ------------------------------ */
 QLabel {
-    color: #333333;
+    color: #1A3050;
 }
 
 QLabel#labelTitle {
     font-size: 14px;
-    color: #666666;
+    color: #4A6080;
 }
 
 QLabel#labelValue {
     font-size: 24px;
     font-weight: bold;
-    color: #222222;
+    color: #1E3A5F;
+}
+
+QLabel#lblLogo_2 {
+    color: #E8F4FF;
+}
+
+QLabel#lblTimeDisplay {
+    color: #A8C8E8;
+}
+
+QLabel#lblStatusLed {
+    font-weight: bold;
+}
+
+QLabel#label_2 {
+    color: #FFFFFF;
+    font-weight: 500;
+}
+
+/* ------------------------------
+   表格美化 - 蓝色系
+------------------------------ */
+QTableWidget {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(200, 220, 255, 0.5);
+}
+
+QTableWidget::item {
+    padding: 6px;
+    border-bottom: 1px solid rgba(200, 220, 255, 0.3);
+}
+
+QTableWidget::item:hover {
+    background-color: rgba(74, 144, 217, 0.15);
+}
+
+QTableWidget::item:selected {
+    background-color: rgba(74, 144, 217, 0.25);
+    color: #1E3A5F;
+}
+
+QTableWidget::horizontalHeader {
+    background-color: rgba(232, 244, 255, 0.9);
+    border-radius: 8px;
+}
+
+QTableWidget::horizontalHeader::section {
+    background-color: rgba(232, 244, 255, 0.9);
+    color: #1A3050;
+    padding: 8px;
+    font-weight: 600;
+    border: none;
+    border-right: 1px solid rgba(200, 220, 255, 0.4);
+}
+
+QTableWidget::horizontalHeader::section:last-child {
+    border-right: none;
+}
+
+QTableWidget::verticalHeader {
+    background-color: rgba(232, 244, 255, 0.6);
+}
+
+QTableWidget::verticalHeader::section {
+    background-color: rgba(232, 244, 255, 0.6);
+    color: #4A6080;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid rgba(200, 220, 255, 0.3);
+}
+
+/* ------------------------------
+   下拉框美化
+------------------------------ */
+QComboBox {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(200, 220, 255, 0.5);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #1A3050;
+}
+
+QComboBox:hover {
+    border-color: #4A90D9;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url(:/images/arrow-down.svg);
+    width: 16px;
+    height: 16px;
+}
+
+/* ------------------------------
+   状态栏
+------------------------------ */
+QStatusBar {
+    background-color: rgba(232, 244, 255, 0.7);
+    border-top: 1px solid rgba(200, 220, 255, 0.3);
+    color: #1A3050;
+}
+
+/* ------------------------------
+   滚动条美化 - 蓝色系
+------------------------------ */
+QScrollBar:vertical {
+    background-color: rgba(200, 220, 255, 0.2);
+    width: 8px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgba(74, 144, 217, 0.4);
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: rgba(74, 144, 217, 0.6);
+}
+
+QScrollBar:horizontal {
+    background-color: rgba(200, 220, 255, 0.2);
+    height: 8px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: rgba(74, 144, 217, 0.4);
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: rgba(74, 144, 217, 0.6);
+}
+
+/* ------------------------------
+   仪表盘文字
+------------------------------ */
+QLabel#gaugeLabelTemp,
+QLabel#gaugeLabelHumi {
+    font-size: 12px;
+    color: #4A6080;
+}
+
+QLabel#gaugeValueTemp,
+QLabel#gaugeValueHumi {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1E3A5F;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -176,7 +406,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>60</x>
-       <y>220</y>
+       <y>260</y>
        <width>121</width>
        <height>20</height>
       </rect>
@@ -194,7 +424,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>270</y>
+       <y>310</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -207,7 +437,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>330</y>
+       <y>370</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -220,7 +450,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>390</y>
+       <y>430</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -233,7 +463,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>450</y>
+       <y>490</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -242,11 +472,24 @@ QLabel#labelValue {
       <string>手动模式</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="btnNavLogs">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>83</y>
+       <width>161</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>操作日志</string>
+     </property>
+    </widget>
     <widget class="QPushButton" name="btnNavTempHumi">
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>100</y>
+       <y>140</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -259,7 +502,7 @@ QLabel#labelValue {
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>157</y>
+       <y>197</y>
        <width>161</width>
        <height>41</height>
       </rect>
@@ -294,7 +537,7 @@ QLabel#labelValue {
       </rect>
      </property>
      <property name="currentIndex">
-      <number>4</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="homepage"/>
      <widget class="QWidget" name="temp">
@@ -537,13 +780,26 @@ QLabel#labelValue {
         </item>
        </layout>
       </widget>
+      <widget class="QPushButton" name="btnToRealtimeData">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>500</y>
+         <width>121</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>实时数据表格</string>
+       </property>
+      </widget>
      </widget>
      <widget class="QWidget" name="history">
       <widget class="QPushButton" name="btnBackToEnv">
        <property name="geometry">
         <rect>
-         <x>330</x>
-         <y>457</y>
+         <x>370</x>
+         <y>450</y>
          <width>121</width>
          <height>41</height>
         </rect>
@@ -555,16 +811,65 @@ QLabel#labelValue {
       <widget class="QTableWidget" name="tableHistory">
        <property name="geometry">
         <rect>
-         <x>40</x>
+         <x>30</x>
          <y>80</y>
-         <width>421</width>
+         <width>461</width>
+         <height>351</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="tempHistory">
+      <widget class="QPushButton" name="btnBackFromTempHistory">
+       <property name="geometry">
+        <rect>
+         <x>370</x>
+         <y>450</y>
+         <width>121</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>返回温湿度页</string>
+       </property>
+      </widget>
+      <widget class="QTableWidget" name="tableTempHistory">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>80</y>
+         <width>461</width>
          <height>351</height>
         </rect>
        </property>
       </widget>
      </widget>
      <widget class="QWidget" name="camera"/>
-     <widget class="QWidget" name="SQLhistory"/>
+     <widget class="QWidget" name="operationLogs">
+      <widget class="QPushButton" name="btnBackFromLogs">
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>450</y>
+         <width>121</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>返回首页</string>
+       </property>
+      </widget>
+      <widget class="QTableWidget" name="tableOperationLogs">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>80</y>
+         <width>481</width>
+         <height>351</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
     </widget>
     <widget class="QFrame" name="lastPanel">
      <property name="geometry">
@@ -712,7 +1017,7 @@ QLabel#labelValue {
        </rect>
       </property>
       <property name="text">
-       <string>查看历史数据</string>
+       <string>温湿度历史</string>
       </property>
      </widget>
     </widget>

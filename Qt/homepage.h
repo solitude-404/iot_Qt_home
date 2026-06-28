@@ -8,6 +8,8 @@
 #include <QFrame>
 #include <QIcon>
 #include <QMessageBox>
+#include <QComboBox>
+#include <QDialog>
 
 class HomePage : public QWidget
 {
@@ -31,8 +33,8 @@ private slots:
 private:
     QFrame* createCard(const QString& iconOff, const QString& title, QPushButton*& btn, QLabel*& iconLabel);
     void updateIcon(QLabel* label, const QString& onPath, const QString& offPath, bool isOn);
+    void updateLightIcon();
 
-    // 每个图标独立！！！不共用
     QPushButton *btnLight, *btnAir, *btnCurtain, *btnDoor, *btnCamera, *btnTemp;
     QLabel *iconLight, *iconAir, *iconCurtain, *iconDoor, *iconCamera, *iconTemp;
 
@@ -40,6 +42,9 @@ private:
     bool airOn = false;
     bool curtainOn = false;
     bool doorOpen = false;
+    int airTemp = 26;
+    QString currentRoom = "全屋";
+    bool roomLightState[4] = {false, false, false, false};
 };
 
 #endif // HOMEPAGE_H

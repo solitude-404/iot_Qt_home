@@ -1,4 +1,4 @@
-QT += core gui charts serialport multimedia
+QT += core gui charts serialport multimedia sql
 QT += multimediawidgets
 QT += widgets
 
@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     camerawidget.cpp \
+    dbhelper.cpp \
     gaugewidget.cpp \
     homepage.cpp \
     main.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
 
 HEADERS += \
     camerawidget.h \
+    dbhelper.h \
     gaugewidget.h \
     homepage.h \
     mainwindow.h
