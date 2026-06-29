@@ -36,7 +36,16 @@ private slots:
     void initHistoryTable();
     void addHistory(double temp, double humi);
     void loadOperationLogs();
+    void loadOperationLogs(const QString& deviceName, const QString& startTime, const QString& endTime);
     void loadTempHistory();
+    void loadTempHistory(const QString& startTime, const QString& endTime);
+    // 分页相关
+    void on_opLogPrevPage();
+    void on_opLogNextPage();
+    void on_opLogFilter();
+    void on_tempHistoryPrevPage();
+    void on_tempHistoryNextPage();
+    void on_tempHistoryFilter();
     // 模式切换（就加这4行）
     void on_btnComfortMode_clicked();
     void on_btnSleepMode_clicked();
@@ -66,6 +75,20 @@ private:
     HomePage *homePage;
     CameraWidget *cameraPage;
     QDateTime lastHistoryTime;                // 上次记录历史数据的时间
+
+    // 分页相关
+    int opLogCurrentPage = 0;
+    int opLogTotalPages = 0;
+    int tempHistoryCurrentPage = 0;
+    int tempHistoryTotalPages = 0;
+    const int pageSize = 10;
+
+    // 筛选条件
+    QString opLogDeviceFilter;
+    QString opLogStartFilter;
+    QString opLogEndFilter;
+    QString tempStartFilter;
+    QString tempEndFilter;
 
     void drawGauge(QWidget *widget, double value, double min, double max, QString unit, QColor color);
 

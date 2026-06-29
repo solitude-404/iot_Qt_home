@@ -207,6 +207,104 @@ bool DBHelper::getOperationLogs(QList<QMap<QString, QVariant>>& logs)
     return true;
 }
 
+bool DBHelper::getOperationLogs(QList<QMap<QString, QVariant>>& logs, int pageIndex, int pageSize,
+                                 const QString& deviceName, const QString& startTime, const QString& endTime)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query;
+    QString sql = "SELECT id, device_name, operation, result, operator_name, create_time FROM operation_log WHERE 1=1";
+    QList<QVariant> params;
+
+    if (!deviceName.isEmpty()) {
+        sql += " AND device_name LIKE ?";
+        params.append("%" + deviceName + "%");
+    }
+    if (!startTime.isEmpty()) {
+        sql += " AND create_time >= ?";
+        params.append(startTime);
+    }
+    if (!endTime.isEmpty()) {
+        sql += " AND create_time <= ?";
+        params.append(endTime + " 23:59:59");
+    }
+
+    sql += " ORDER BY create_time DESC LIMIT ? OFFSET ?";
+    params.append(pageSize);
+    params.append(pageIndex * pageSize);
+
+    query.prepare(sql);
+    for (int i = 0; i < params.size(); i++) {
+        query.addBindValue(params[i]);
+    }
+
+    if (!query.exec()) {
+        qDebug() << "读取操作日志失败：" << query.lastError().text();
+        db.close();
+        return false;
+    }
+
+    logs.clear();
+    while (query.next()) {
+        QMap<QString, QVariant> log;
+        log["id"] = query.value(0).toInt();
+        log["device_name"] = query.value(1).toString();
+        log["operation"] = query.value(2).toString();
+        log["result"] = query.value(3).toString();
+        log["operator_name"] = query.value(4).toString();
+        log["create_time"] = query.value(5).toString();
+        logs.append(log);
+    }
+
+    db.close();
+    return true;
+}
+
+int DBHelper::getOperationLogCount(const QString& deviceName, const QString& startTime, const QString& endTime)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return 0;
+    }
+
+    QSqlQuery query;
+    QString sql = "SELECT COUNT(*) FROM operation_log WHERE 1=1";
+    QList<QVariant> params;
+
+    if (!deviceName.isEmpty()) {
+        sql += " AND device_name LIKE ?";
+        params.append("%" + deviceName + "%");
+    }
+    if (!startTime.isEmpty()) {
+        sql += " AND create_time >= ?";
+        params.append(startTime);
+    }
+    if (!endTime.isEmpty()) {
+        sql += " AND create_time <= ?";
+        params.append(endTime + " 23:59:59");
+    }
+
+    query.prepare(sql);
+    for (int i = 0; i < params.size(); i++) {
+        query.addBindValue(params[i]);
+    }
+
+    if (!query.exec() || !query.next()) {
+        qDebug() << "统计操作日志数量失败：" << query.lastError().text();
+        db.close();
+        return 0;
+    }
+
+    int count = query.value(0).toInt();
+    db.close();
+    return count;
+}
+
 bool DBHelper::addTempHistory(double temp, double humi)
 {
     QSqlDatabase db = getDB();
@@ -263,6 +361,94 @@ bool DBHelper::getTempHistory(QList<QMap<QString, QVariant>>& records)
 
     db.close();
     return true;
+}
+
+bool DBHelper::getTempHistory(QList<QMap<QString, QVariant>>& records, int pageIndex, int pageSize,
+                               const QString& startTime, const QString& endTime)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query;
+    QString sql = "SELECT id, temperature, humidity, create_time FROM temp_humidity_history WHERE 1=1";
+    QList<QVariant> params;
+
+    if (!startTime.isEmpty()) {
+        sql += " AND create_time >= ?";
+        params.append(startTime);
+    }
+    if (!endTime.isEmpty()) {
+        sql += " AND create_time <= ?";
+        params.append(endTime + " 23:59:59");
+    }
+
+    sql += " ORDER BY create_time DESC LIMIT ? OFFSET ?";
+    params.append(pageSize);
+    params.append(pageIndex * pageSize);
+
+    query.prepare(sql);
+    for (int i = 0; i < params.size(); i++) {
+        query.addBindValue(params[i]);
+    }
+
+    if (!query.exec()) {
+        qDebug() << "读取温湿度历史失败：" << query.lastError().text();
+        db.close();
+        return false;
+    }
+
+    records.clear();
+    while (query.next()) {
+        QMap<QString, QVariant> record;
+        record["id"] = query.value(0).toInt();
+        record["temperature"] = query.value(1).toDouble();
+        record["humidity"] = query.value(2).toDouble();
+        record["create_time"] = query.value(3).toString();
+        records.append(record);
+    }
+
+    db.close();
+    return true;
+}
+
+int DBHelper::getTempHistoryCount(const QString& startTime, const QString& endTime)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return 0;
+    }
+
+    QSqlQuery query;
+    QString sql = "SELECT COUNT(*) FROM temp_humidity_history WHERE 1=1";
+    QList<QVariant> params;
+
+    if (!startTime.isEmpty()) {
+        sql += " AND create_time >= ?";
+        params.append(startTime);
+    }
+    if (!endTime.isEmpty()) {
+        sql += " AND create_time <= ?";
+        params.append(endTime + " 23:59:59");
+    }
+
+    query.prepare(sql);
+    for (int i = 0; i < params.size(); i++) {
+        query.addBindValue(params[i]);
+    }
+
+    if (!query.exec() || !query.next()) {
+        qDebug() << "统计温湿度历史数量失败：" << query.lastError().text();
+        db.close();
+        return 0;
+    }
+
+    int count = query.value(0).toInt();
+    db.close();
+    return count;
 }
 
 QString DBHelper::getConfig(const QString& key, const QString& defaultValue)

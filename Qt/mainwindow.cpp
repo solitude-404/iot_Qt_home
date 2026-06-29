@@ -140,6 +140,54 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(cameraPage, &CameraWidget::doorOpened, homePage, &HomePage::openDoorOnly);
 
+    // ======================
+    // 分页信号连接
+    // ======================
+    connect(ui->btnOpLogPrev, &QPushButton::clicked, this, [=](){
+        on_opLogPrevPage();
+        ui->lbOpLogPage->setText(QString("第 %1/%2 页").arg(opLogCurrentPage + 1).arg(opLogTotalPages));
+        ui->btnOpLogPrev->setEnabled(opLogCurrentPage > 0);
+        ui->btnOpLogNext->setEnabled(opLogCurrentPage < opLogTotalPages - 1);
+    });
+    connect(ui->btnOpLogNext, &QPushButton::clicked, this, [=](){
+        on_opLogNextPage();
+        ui->lbOpLogPage->setText(QString("第 %1/%2 页").arg(opLogCurrentPage + 1).arg(opLogTotalPages));
+        ui->btnOpLogPrev->setEnabled(opLogCurrentPage > 0);
+        ui->btnOpLogNext->setEnabled(opLogCurrentPage < opLogTotalPages - 1);
+    });
+    connect(ui->btnOpLogFilter, &QPushButton::clicked, this, [=](){
+        opLogCurrentPage = 0;
+        opLogDeviceFilter = ui->leOpLogDevice->text();
+        opLogStartFilter = ui->deOpLogStart->date().toString("yyyy-MM-dd");
+        opLogEndFilter = ui->deOpLogEnd->date().toString("yyyy-MM-dd");
+        loadOperationLogs(opLogDeviceFilter, opLogStartFilter, opLogEndFilter);
+        ui->lbOpLogPage->setText(QString("第 %1/%2 页").arg(opLogCurrentPage + 1).arg(opLogTotalPages));
+        ui->btnOpLogPrev->setEnabled(opLogCurrentPage > 0);
+        ui->btnOpLogNext->setEnabled(opLogCurrentPage < opLogTotalPages - 1);
+    });
+
+    connect(ui->btnTempPrev, &QPushButton::clicked, this, [=](){
+        on_tempHistoryPrevPage();
+        ui->lbTempPage->setText(QString("第 %1/%2 页").arg(tempHistoryCurrentPage + 1).arg(tempHistoryTotalPages));
+        ui->btnTempPrev->setEnabled(tempHistoryCurrentPage > 0);
+        ui->btnTempNext->setEnabled(tempHistoryCurrentPage < tempHistoryTotalPages - 1);
+    });
+    connect(ui->btnTempNext, &QPushButton::clicked, this, [=](){
+        on_tempHistoryNextPage();
+        ui->lbTempPage->setText(QString("第 %1/%2 页").arg(tempHistoryCurrentPage + 1).arg(tempHistoryTotalPages));
+        ui->btnTempPrev->setEnabled(tempHistoryCurrentPage > 0);
+        ui->btnTempNext->setEnabled(tempHistoryCurrentPage < tempHistoryTotalPages - 1);
+    });
+    connect(ui->btnTempFilter, &QPushButton::clicked, this, [=](){
+        tempHistoryCurrentPage = 0;
+        tempStartFilter = ui->deTempStart->date().toString("yyyy-MM-dd");
+        tempEndFilter = ui->deTempEnd->date().toString("yyyy-MM-dd");
+        loadTempHistory(tempStartFilter, tempEndFilter);
+        ui->lbTempPage->setText(QString("第 %1/%2 页").arg(tempHistoryCurrentPage + 1).arg(tempHistoryTotalPages));
+        ui->btnTempPrev->setEnabled(tempHistoryCurrentPage > 0);
+        ui->btnTempNext->setEnabled(tempHistoryCurrentPage < tempHistoryTotalPages - 1);
+    });
+
 
     // 刷新界面显示
     updateThresholdUI();
@@ -523,7 +571,7 @@ void MainWindow::addHistory(double temp, double humi)
     DBHelper::addTempHistory(temp, humi);
 }
 
-void MainWindow::loadOperationLogs()
+void MainWindow::loadOperationLogs(const QString& deviceName, const QString& startTime, const QString& endTime)
 {
     ui->tableOperationLogs->setColumnCount(6);
     ui->tableOperationLogs->setHorizontalHeaderLabels({"序号", "设备名称", "操作类型", "操作结果", "操作人", "操作时间"});
@@ -544,8 +592,14 @@ void MainWindow::loadOperationLogs()
         connected = true;
     }
 
+    int total = DBHelper::getOperationLogCount(deviceName, startTime, endTime);
+    opLogTotalPages = (total + pageSize - 1) / pageSize;
+    if (opLogCurrentPage >= opLogTotalPages) {
+        opLogCurrentPage = qMax(0, opLogTotalPages - 1);
+    }
+
     QList<QMap<QString, QVariant>> logs;
-    if (DBHelper::getOperationLogs(logs)) {
+    if (DBHelper::getOperationLogs(logs, opLogCurrentPage, pageSize, deviceName, startTime, endTime)) {
         int row = 0;
         for (const QMap<QString, QVariant>& log : logs) {
             ui->tableOperationLogs->insertRow(row);
@@ -556,7 +610,8 @@ void MainWindow::loadOperationLogs()
             QString result = log["result"].toString();
             QString operatorName = log["operator_name"].toString();
 
-            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(row + 1));
+            int seq = opLogCurrentPage * pageSize + row + 1;
+            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(seq));
             QTableWidgetItem *item2 = new QTableWidgetItem(deviceName);
             QTableWidgetItem *item3 = new QTableWidgetItem(opName);
             QTableWidgetItem *item4 = new QTableWidgetItem(result);
@@ -580,7 +635,13 @@ void MainWindow::loadOperationLogs()
     }
 }
 
-void MainWindow::loadTempHistory()
+void MainWindow::loadOperationLogs()
+{
+    opLogCurrentPage = 0;
+    loadOperationLogs("", "", "");
+}
+
+void MainWindow::loadTempHistory(const QString& startTime, const QString& endTime)
 {
     ui->tableTempHistory->setColumnCount(4);
     ui->tableTempHistory->setHorizontalHeaderLabels({"序号", "温度(℃)", "湿度(%)", "时间"});
@@ -601,8 +662,14 @@ void MainWindow::loadTempHistory()
         tempHistoryConnected = true;
     }
 
+    int total = DBHelper::getTempHistoryCount(startTime, endTime);
+    tempHistoryTotalPages = (total + pageSize - 1) / pageSize;
+    if (tempHistoryCurrentPage >= tempHistoryTotalPages) {
+        tempHistoryCurrentPage = qMax(0, tempHistoryTotalPages - 1);
+    }
+
     QList<QMap<QString, QVariant>> records;
-    if (DBHelper::getTempHistory(records)) {
+    if (DBHelper::getTempHistory(records, tempHistoryCurrentPage, pageSize, startTime, endTime)) {
         int row = 0;
         for (const QMap<QString, QVariant>& record : records) {
             ui->tableTempHistory->insertRow(row);
@@ -611,7 +678,8 @@ void MainWindow::loadTempHistory()
             double humi = record["humidity"].toDouble();
             QString time = record["create_time"].toString();
 
-            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(row + 1));
+            int seq = tempHistoryCurrentPage * pageSize + row + 1;
+            QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(seq));
             QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(temp, 'f', 1));
             QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(humi, 'f', 1));
             QTableWidgetItem *item4 = new QTableWidgetItem(time);
@@ -627,6 +695,12 @@ void MainWindow::loadTempHistory()
             row++;
         }
     }
+}
+
+void MainWindow::loadTempHistory()
+{
+    tempHistoryCurrentPage = 0;
+    loadTempHistory("", "");
 }
 
 // ======================
@@ -663,5 +737,49 @@ void MainWindow::on_btnManualMode_clicked()
 {
     QMessageBox::information(this, "模式", "✅ 手动模式已开启\n可自由控制灯光、窗帘、空调、电视");
     DBHelper::addOperationLog("模式切换", "切换至手动模式", "成功");
+}
+
+void MainWindow::on_opLogPrevPage()
+{
+    if (opLogCurrentPage > 0) {
+        opLogCurrentPage--;
+        loadOperationLogs(opLogDeviceFilter, opLogStartFilter, opLogEndFilter);
+    }
+}
+
+void MainWindow::on_opLogNextPage()
+{
+    if (opLogCurrentPage < opLogTotalPages - 1) {
+        opLogCurrentPage++;
+        loadOperationLogs(opLogDeviceFilter, opLogStartFilter, opLogEndFilter);
+    }
+}
+
+void MainWindow::on_opLogFilter()
+{
+    opLogCurrentPage = 0;
+    loadOperationLogs(opLogDeviceFilter, opLogStartFilter, opLogEndFilter);
+}
+
+void MainWindow::on_tempHistoryPrevPage()
+{
+    if (tempHistoryCurrentPage > 0) {
+        tempHistoryCurrentPage--;
+        loadTempHistory(tempStartFilter, tempEndFilter);
+    }
+}
+
+void MainWindow::on_tempHistoryNextPage()
+{
+    if (tempHistoryCurrentPage < tempHistoryTotalPages - 1) {
+        tempHistoryCurrentPage++;
+        loadTempHistory(tempStartFilter, tempEndFilter);
+    }
+}
+
+void MainWindow::on_tempHistoryFilter()
+{
+    tempHistoryCurrentPage = 0;
+    loadTempHistory(tempStartFilter, tempEndFilter);
 }
 
