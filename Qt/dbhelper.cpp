@@ -31,12 +31,26 @@ bool DBHelper::initDB()
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             device_name VARCHAR(50) UNIQUE NOT NULL,
             status BOOLEAN NOT NULL DEFAULT 0,
+            extra_value INTEGER DEFAULT 0,
             update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     )";
     if (!query.exec(createDeviceTable)) {
         qDebug() << "创建设备状态表失败：" << query.lastError().text();
         return false;
+    }
+
+    // 如果 extra_value 列不存在，则添加（兼容旧数据库）
+    query.exec("PRAGMA table_info(device_status)");
+    bool hasExtraValue = false;
+    while (query.next()) {
+        if (query.value(1).toString() == "extra_value") {
+            hasExtraValue = true;
+            break;
+        }
+    }
+    if (!hasExtraValue) {
+        query.exec("ALTER TABLE device_status ADD COLUMN extra_value INTEGER DEFAULT 0");
     }
 
     // 创建操作日志表
@@ -106,10 +120,16 @@ bool DBHelper::getDeviceStatus(const QString& deviceName, bool& status)
     QSqlQuery query;
     query.prepare("SELECT status FROM device_status WHERE device_name = ?");
     query.addBindValue(deviceName);
-    if (!query.exec() || !query.next()) {
+    if (!query.exec()) {
         qDebug() << "读取设备状态失败：" << query.lastError().text();
         db.close();
         return false;
+    }
+
+    if (!query.next()) {
+        status = false;
+        db.close();
+        return true;
     }
 
     status = query.value(0).toBool();
@@ -128,15 +148,69 @@ bool DBHelper::updateDeviceStatus(const QString& deviceName, bool status)
     QSqlQuery query;
     QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
     query.prepare(R"(
-        UPDATE device_status
-        SET status = ?, update_time = ?
-        WHERE device_name = ?
+        INSERT OR REPLACE INTO device_status (device_name, status, update_time)
+        VALUES (?, ?, ?)
     )");
+    query.addBindValue(deviceName);
     query.addBindValue(status);
     query.addBindValue(currentTime);
-    query.addBindValue(deviceName);
     if (!query.exec()) {
         qDebug() << "更新设备状态失败：" << query.lastError().text();
+        db.close();
+        return false;
+    }
+
+    db.close();
+    return true;
+}
+
+int DBHelper::getDeviceExtraValue(const QString& deviceName)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return 0;
+    }
+
+    QSqlQuery query;
+    query.prepare("SELECT extra_value FROM device_status WHERE device_name = ?");
+    query.addBindValue(deviceName);
+    if (!query.exec()) {
+        qDebug() << "读取设备扩展值失败：" << query.lastError().text();
+        db.close();
+        return 0;
+    }
+
+    if (!query.next()) {
+        db.close();
+        return 0;
+    }
+
+    int value = query.value(0).toInt();
+    db.close();
+    return value;
+}
+
+bool DBHelper::updateDeviceExtraValue(const QString& deviceName, int value)
+{
+    QSqlDatabase db = getDB();
+    if (!db.open()) {
+        qDebug() << "数据库打开失败：" << db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query;
+    QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    query.prepare(R"(
+        INSERT OR REPLACE INTO device_status (device_name, status, extra_value, update_time)
+        VALUES (?, (SELECT status FROM device_status WHERE device_name = ?), ?, ?)
+    )");
+    query.addBindValue(deviceName);
+    query.addBindValue(deviceName);
+    query.addBindValue(value);
+    query.addBindValue(currentTime);
+    if (!query.exec()) {
+        qDebug() << "更新设备扩展值失败：" << query.lastError().text();
         db.close();
         return false;
     }

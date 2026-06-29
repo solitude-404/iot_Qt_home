@@ -14,5 +14,6 @@
         <file>images/off.svg</file>
         <file>images/on.svg</file>
         <file>images/temp.svg</file>
+        <file>images/arrow-down.svg</file>
     </qresource>
 </RCC>

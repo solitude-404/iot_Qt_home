@@ -18,6 +18,8 @@ public:
     // 设备状态操作
     static bool getDeviceStatus(const QString& deviceName, bool& status); // 读取设备状态
     static bool updateDeviceStatus(const QString& deviceName, bool status); // 更新设备状态
+    static int getDeviceExtraValue(const QString& deviceName); // 读取设备扩展值（灯光强度/空调温度）
+    static bool updateDeviceExtraValue(const QString& deviceName, int value); // 更新设备扩展值
     // 操作日志操作
     static bool addOperationLog(const QString& deviceName, const QString& operation, const QString& result, const QString& operatorName = "admin"); // 新增操作日志
     static bool getOperationLogs(QList<QMap<QString, QVariant>>& logs); // 读取操作日志列表

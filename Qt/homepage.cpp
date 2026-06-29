@@ -41,6 +41,19 @@ HomePage::HomePage(QWidget *parent)
     if(DBHelper::getDeviceStatus("light", stat))
     {
         lightOn = stat;
+        lightIntensity = DBHelper::getDeviceExtraValue("light"); // 从数据库加载灯光强度
+        if (lightIntensity == 0) lightIntensity = 100; // 默认100%
+
+        for(int i=0; i<4; i++) {
+            QString devName = QString("light_%1").arg(i);
+            bool roomStat = false;
+            if(DBHelper::getDeviceStatus(devName, roomStat)) {
+                roomLightState[i] = roomStat;
+            }
+            int intensity = DBHelper::getDeviceExtraValue(devName);
+            roomLightIntensity[i] = (intensity == 0) ? 100 : intensity;
+        }
+
         btnLight->setText(lightOn ? "已开启" : "已关闭");
         statusLight->setText(lightOn ? QString("已开启 %1%").arg(lightIntensity) : "已关闭");
         updateLightIcon();
@@ -48,6 +61,8 @@ HomePage::HomePage(QWidget *parent)
     if(DBHelper::getDeviceStatus("air", stat))
     {
         airOn = stat;
+        airTemp = DBHelper::getDeviceExtraValue("air"); // 从数据库加载空调温度
+        if (airTemp == 0) airTemp = 26; // 默认26°C
         btnAir->setText(airOn ? QString("已开启(%1°C)").arg(airTemp) : "已关闭");
         statusAir->setText(airOn ? QString("已开启 %1°C").arg(airTemp) : "已关闭");
         updateIcon(iconAir, ":/images/icon_aircon_on.svg", ":/images/icon_aircon_off.svg", airOn);
@@ -149,6 +164,17 @@ void HomePage::toggleLight()
         intensityLabel->setText(QString("灯光强度：%1%").arg(value));
     });
 
+    connect(roomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int idx) {
+        int currentIntensity = 100;
+        if (idx == 0) {
+            currentIntensity = lightIntensity;
+        } else {
+            currentIntensity = roomLightIntensity[idx - 1];
+        }
+        intensitySlider->setValue(currentIntensity);
+        intensityLabel->setText(QString("灯光强度：%1%").arg(currentIntensity));
+    });
+
     QString opText;
     int clickedBtn = -1;
 
@@ -159,22 +185,26 @@ void HomePage::toggleLight()
     {
         QString room = roomCombo->currentText();
         bool isOn = (clickedBtn == 1);
-
-        if(isOn) {
-            lightIntensity = intensitySlider->value();
-        }
+        int newIntensity = intensitySlider->value();
 
         if(room == "全屋")
         {
             lightOn = isOn;
             for(int i=0; i<4; i++) {
                 roomLightState[i] = isOn;
+                roomLightIntensity[i] = isOn ? newIntensity : 100;
+                DBHelper::updateDeviceStatus(QString("light_%1").arg(i), isOn);
+                DBHelper::updateDeviceExtraValue(QString("light_%1").arg(i), roomLightIntensity[i]);
             }
+            lightIntensity = newIntensity;
             opText = isOn ? QString("开启全屋灯光(%1%)").arg(lightIntensity) : "关闭全屋灯光";
         } else {
             int idx = roomCombo->currentIndex() - 1;
             roomLightState[idx] = isOn;
-            opText = isOn ? QString("开启%1灯光(%2%)").arg(room).arg(lightIntensity) : QString("关闭%1灯光").arg(room);
+            roomLightIntensity[idx] = isOn ? newIntensity : 100;
+            DBHelper::updateDeviceStatus(QString("light_%1").arg(idx), isOn);
+            DBHelper::updateDeviceExtraValue(QString("light_%1").arg(idx), roomLightIntensity[idx]);
+            opText = isOn ? QString("开启%1灯光(%2%)").arg(room).arg(newIntensity) : QString("关闭%1灯光").arg(room);
 
             bool allOff = true;
             for(int i=0; i<4; i++) {
@@ -187,6 +217,7 @@ void HomePage::toggleLight()
         statusLight->setText(lightOn ? QString("已开启 %1%").arg(lightIntensity) : "已关闭");
         updateLightIcon();
         DBHelper::updateDeviceStatus("light", lightOn);
+        DBHelper::updateDeviceExtraValue("light", lightIntensity);
         DBHelper::addOperationLog("灯光", opText, "成功");
         QMessageBox::information(this, "提示", opText);
     }
@@ -238,22 +269,27 @@ void HomePage::toggleAir()
             airOn = true;
             airTemp = tempSpin->value();
             opText = QString("开启空调(%1°C)").arg(airTemp);
+            updateIcon(iconAir, ":/images/icon_aircon_on.svg", ":/images/icon_aircon_off.svg", airOn);
+            DBHelper::updateDeviceStatus("air", airOn);
+            DBHelper::updateDeviceExtraValue("air", airTemp);
         }
         else if(mode == "关闭空调")
         {
             airOn = false;
             opText = "关闭空调";
+            updateIcon(iconAir, ":/images/icon_aircon_on.svg", ":/images/icon_aircon_off.svg", airOn);
+            DBHelper::updateDeviceStatus("air", airOn);
         }
         else
         {
             airTemp = tempSpin->value();
             opText = QString("空调温度调至%1°C").arg(airTemp);
-        }
-
-        if(mode != "调节温度")
-        {
-            updateIcon(iconAir, ":/images/icon_aircon_on.svg", ":/images/icon_aircon_off.svg", airOn);
-            DBHelper::updateDeviceStatus("air", airOn);
+            if (!airOn) {
+                airOn = true;
+                updateIcon(iconAir, ":/images/icon_aircon_on.svg", ":/images/icon_aircon_off.svg", airOn);
+                DBHelper::updateDeviceStatus("air", airOn);
+            }
+            DBHelper::updateDeviceExtraValue("air", airTemp);
         }
 
         btnAir->setText(airOn ? QString("已开启(%1°C)").arg(airTemp) : "已关闭");
@@ -298,6 +334,7 @@ void HomePage::setAirTemp(int temp)
     btnAir->setText(QString("已开启(%1°C)").arg(airTemp));
     statusAir->setText(QString("已开启 %1°C").arg(airTemp));
     DBHelper::updateDeviceStatus("air", true);
+    DBHelper::updateDeviceExtraValue("air", airTemp); // 保存空调温度到数据库
     DBHelper::addOperationLog("空调", QString("空调温度调至%1°C").arg(airTemp), "成功");
 }
 
@@ -307,6 +344,9 @@ void HomePage::setLightIntensity(int intensity)
         lightOn = false;
         for(int i=0; i<4; i++) {
             roomLightState[i] = false;
+            roomLightIntensity[i] = 100;
+            DBHelper::updateDeviceStatus(QString("light_%1").arg(i), false);
+            DBHelper::updateDeviceExtraValue(QString("light_%1").arg(i), 100);
         }
         lightIntensity = 100;
         btnLight->setText("已关闭");
@@ -323,8 +363,14 @@ void HomePage::setLightIntensity(int intensity)
             DBHelper::updateDeviceStatus("light", true);
         }
         lightIntensity = intensity;
+        for(int i=0; i<4; i++) {
+            roomLightIntensity[i] = intensity;
+            DBHelper::updateDeviceStatus(QString("light_%1").arg(i), true);
+            DBHelper::updateDeviceExtraValue(QString("light_%1").arg(i), intensity);
+        }
         btnLight->setText("已开启");
         statusLight->setText(QString("已开启 %1%").arg(lightIntensity));
+        DBHelper::updateDeviceExtraValue("light", lightIntensity); // 保存灯光强度到数据库
     }
 }
 

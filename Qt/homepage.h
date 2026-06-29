@@ -54,6 +54,8 @@ private:
     int lightIntensity = 100;
     QString currentRoom = "全屋";
     bool roomLightState[4] = {false, false, false, false};
+    int roomLightIntensity[4] = {100, 100, 100, 100};
+    QString roomNames[4] = {"客厅", "卧室", "厨房", "卫生间"};
 };
 
 #endif // HOMEPAGE_H
