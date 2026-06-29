@@ -75,6 +75,7 @@ private:
     HomePage *homePage;
     CameraWidget *cameraPage;
     QDateTime lastHistoryTime;                // 上次记录历史数据的时间
+    QString serialBuffer;                      // 串口数据缓冲区
 
     // 分页相关
     int opLogCurrentPage = 0;

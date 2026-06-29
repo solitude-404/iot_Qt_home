@@ -151,7 +151,7 @@ void main()
 													 
 								HEATER_RELAY = 1;  // 关闭加热
 								COOLER_RELAY = 1;  // 关闭冷却（风扇停止）
-								
+								UART_SendString("Temperature normal - Relays OFF\r\n");
 								// 根据显示模式显示数据
 								if(displayMode == 0)
 								{

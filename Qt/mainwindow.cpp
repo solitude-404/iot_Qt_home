@@ -14,6 +14,7 @@
 #include <QToolTip>
 #include <QCursor>
 #include <QThread>
+#include <QGraphicsOpacityEffect>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -341,114 +342,111 @@ void MainWindow::onConnectBtnClicked()
 void MainWindow::readSerialData()
 {
     QByteArray raw = serial->readAll();
-    QString data = QString::fromUtf8(raw).trimmed();
-    if (data.isEmpty()) return;
+    if (raw.isEmpty()) return;
 
-    qDebug() << "[单片机]" << data;
+    serialBuffer.append(QString::fromUtf8(raw));
 
-    // 解析实时温湿度
-    int tStart = data.indexOf("T:");
-    int tEnd   = data.indexOf("C", tStart);
-    if (tStart != -1 && tEnd != -1) {
-        QString temp = data.mid(tStart + 2, tEnd - tStart - 2);
-        ui->lblCurrentTemp->setText(temp);
-        tempSeries->append(dataPointCount, temp.toDouble());
+    int newlineIndex;
+    while ((newlineIndex = serialBuffer.indexOf('\n')) != -1) {
+        QString data = serialBuffer.left(newlineIndex).trimmed();
+        serialBuffer.remove(0, newlineIndex + 1);
+
+        if (data.isEmpty()) continue;
+
+        qDebug() << "[单片机]" << data;
+
+        // 解析实时温湿度
+        int tStart = data.indexOf("T:");
+        int tEnd   = data.indexOf("C", tStart);
+        if (tStart != -1 && tEnd != -1) {
+            QString temp = data.mid(tStart + 2, tEnd - tStart - 2);
+            ui->lblCurrentTemp->setText(temp);
+            tempSeries->append(dataPointCount, temp.toDouble());
+        }
+
+        int hStart = data.indexOf("H:");
+        int hEnd   = data.indexOf("%", hStart);
+        if (hStart != -1 && hEnd != -1) {
+            QString humi = data.mid(hStart + 2, hEnd - hStart - 2);
+            ui->lblCurrentHumi->setText(humi);
+            humiSeries->append(dataPointCount, humi.toDouble());
+        }
+
+        // ========== 解析温度阈值：TH:xx,TL:xx ==========
+        int thIdx = data.indexOf("TH:");
+        int tlIdx = data.indexOf("TL:");
+
+        if (thIdx >= 0 && tlIdx >= 0) {
+            int comma = data.indexOf(',', thIdx);
+
+            QString thVal = data.mid(thIdx + 3, comma - thIdx - 3);
+            tempMax = thVal.toDouble();
+
+            QString tlVal = data.mid(tlIdx + 3);
+            tempMin = tlVal.toDouble();
+
+            updateThresholdUI();
+
+            DBHelper::setConfig("tempMax", QString::number(tempMax));
+            DBHelper::setConfig("tempMin", QString::number(tempMin));
+        }
+
+        // ================================
+        // 🔥 继电器状态解析
+        // ================================
+        if (data.contains("Heater ON")) {
+            heaterOn = true;
+            coolerOn = false;
+        }
+        else if (data.contains("Cooler ON")) {
+            coolerOn = true;
+            heaterOn = false;
+        }
+        else if (data.contains("Temperature normal") || data.contains("Relays OFF")) {
+            heaterOn = false;
+            coolerOn = false;
+        }
+
+        // 更新仪表盘
+        double temp = ui->lblCurrentTemp->text().toDouble();
+        double humi = ui->lblCurrentHumi->text().toDouble();
+
+        QString time = QDateTime::currentDateTime().toString("HH:mm:ss");
+        ui->tableHistory->insertRow(0);
+        ui->tableHistory->setItem(0, 0, new QTableWidgetItem(QString::number(1)));
+        ui->tableHistory->setItem(0, 1, new QTableWidgetItem(QString::number(temp, 'f', 1)));
+        ui->tableHistory->setItem(0, 2, new QTableWidgetItem(QString::number(humi, 'f', 1)));
+        ui->tableHistory->setItem(0, 3, new QTableWidgetItem(time));
+        for(int i=0; i<ui->tableHistory->rowCount(); i++){
+            ui->tableHistory->setItem(i, 0, new QTableWidgetItem(QString::number(i+1)));
+        }
+        if(ui->tableHistory->rowCount() > 50){
+            ui->tableHistory->removeRow(ui->tableHistory->rowCount()-1);
+        }
+
+        QDateTime now = QDateTime::currentDateTime();
+        if (lastHistoryTime.isNull() || lastHistoryTime.secsTo(now) >= 60) {
+            DBHelper::addTempHistory(temp, humi);
+            lastHistoryTime = now;
+        }
+
+        ui->gaugeTemp->setValue(temp);
+        ui->gaugeHumi->setValue(humi);
+
+        if (data.contains("Alarm ON")) {
+            ui->switchAlarm->setChecked(true);
+            ui->switchAlarm->setText("蜂鸣器警报：已开启");
+        }
+        else if (data.contains("Alarm OFF")) {
+            ui->switchAlarm->setChecked(false);
+            ui->switchAlarm->setText("蜂鸣器警报：已关闭");
+        }
+
+        updateRelayUI();
+
+        if (++dataPointCount > 30)
+            axisX->setRange(dataPointCount - 30, dataPointCount);
     }
-
-    int hStart = data.indexOf("H:");
-    int hEnd   = data.indexOf("%", hStart);
-    if (hStart != -1 && hEnd != -1) {
-        QString humi = data.mid(hStart + 2, hEnd - hStart - 2);
-        ui->lblCurrentHumi->setText(humi);
-        humiSeries->append(dataPointCount, humi.toDouble());
-    }
-
-    // ========== 解析温度阈值：TH:xx,TL:xx ==========
-    int thIdx = data.indexOf("TH:");
-    int tlIdx = data.indexOf("TL:");
-
-    if (thIdx >= 0 && tlIdx >= 0) {
-        int comma = data.indexOf(',', thIdx);
-
-        // 提取温度上限
-        QString thVal = data.mid(thIdx + 3, comma - thIdx - 3);
-        tempMax = thVal.toDouble();
-
-        // 提取温度下限
-        QString tlVal = data.mid(tlIdx + 3);
-        tempMin = tlVal.toDouble();
-
-        // 更新界面
-        updateThresholdUI();
-
-        // 保存到数据库
-        DBHelper::setConfig("tempMax", QString::number(tempMax));
-        DBHelper::setConfig("tempMin", QString::number(tempMin));
-    }
-
-    // ================================
-    // 🔥 继电器状态解析（完美版）
-    // ================================
-    if (data.contains("Heater ON")) {
-        heaterOn = true;
-        coolerOn = false;
-    }
-    else if (data.contains("Cooler ON")) {
-        coolerOn = true;
-        heaterOn = false;
-    }
-    // 温度正常 → 全部关闭
-    else if (data.contains("Temperature normal") || data.contains("Relays OFF")) {
-        heaterOn = false;
-        coolerOn = false;
-    }
-    // 更新仪表盘
-    double temp = ui->lblCurrentTemp->text().toDouble();
-    double humi = ui->lblCurrentHumi->text().toDouble();
-    // 示例：你解析出温度 temp，湿度 humi 后
-
-    // 实时表格每次都更新
-    QString time = QDateTime::currentDateTime().toString("HH:mm:ss");
-    ui->tableHistory->insertRow(0);
-    ui->tableHistory->setItem(0, 0, new QTableWidgetItem(QString::number(1)));
-    ui->tableHistory->setItem(0, 1, new QTableWidgetItem(QString::number(temp, 'f', 1)));
-    ui->tableHistory->setItem(0, 2, new QTableWidgetItem(QString::number(humi, 'f', 1)));
-    ui->tableHistory->setItem(0, 3, new QTableWidgetItem(time));
-    for(int i=0; i<ui->tableHistory->rowCount(); i++){
-        ui->tableHistory->setItem(i, 0, new QTableWidgetItem(QString::number(i+1)));
-    }
-    if(ui->tableHistory->rowCount() > 50){
-        ui->tableHistory->removeRow(ui->tableHistory->rowCount()-1);
-    }
-
-    // 数据库历史记录每1分钟写入一次
-    QDateTime now = QDateTime::currentDateTime();
-    if (lastHistoryTime.isNull() || lastHistoryTime.secsTo(now) >= 60) {
-        DBHelper::addTempHistory(temp, humi);
-        lastHistoryTime = now;
-    }
-
-    ui->gaugeTemp->setValue(temp);
-    ui->gaugeHumi->setValue(humi);
-
-    // ------------------------------
-    // 警报状态自动同步胶囊开关
-    // ------------------------------
-    if (data.contains("Alarm ON")) {
-        ui->switchAlarm->setChecked(true);
-        ui->switchAlarm->setText("蜂鸣器警报：已开启");
-    }
-    else if (data.contains("Alarm OFF")) {
-        ui->switchAlarm->setChecked(false);
-        ui->switchAlarm->setText("蜂鸣器警报：已关闭");
-    }
-
-    // 同步图标和开关
-    updateRelayUI();
-
-    // 波形图滚动
-    if (++dataPointCount > 30)
-        axisX->setRange(dataPointCount - 30, dataPointCount);
 }
 
 // 更新阈值显示
@@ -468,22 +466,26 @@ void MainWindow::updateRelayUI()
 {
     // 加热
     if (heaterOn) {
-        ui->lblFireIcon->setStyleSheet("");
+        ui->lblFireIcon->setGraphicsEffect(nullptr);
         ui->lblFireIcon->setPixmap(QPixmap(":/images/fire.svg").scaled(54,54));
         ui->chkHeatSwitch->setChecked(true);
     } else {
-        ui->lblFireIcon->setStyleSheet("QLabel{ opacity: 0.4; }");
+        QGraphicsOpacityEffect *effect = new QGraphicsOpacityEffect(this);
+        effect->setOpacity(0.4);
+        ui->lblFireIcon->setGraphicsEffect(effect);
         ui->chkHeatSwitch->setChecked(false);
     }
 
     // 冷却 + 风扇旋转
     if (coolerOn) {
-        ui->lblFanIcon->setStyleSheet("");
+        ui->lblFanIcon->setGraphicsEffect(nullptr);
         ui->lblFanIcon->setPixmap(QPixmap(":/images/fan.svg").scaled(54,54));
         ui->chkFanSwitch->setChecked(true);
         fanAnimation->start();
     } else {
-        ui->lblFanIcon->setStyleSheet("QLabel{ opacity: 0.4; }");
+        QGraphicsOpacityEffect *effect = new QGraphicsOpacityEffect(this);
+        effect->setOpacity(0.4);
+        ui->lblFanIcon->setGraphicsEffect(effect);
         ui->chkFanSwitch->setChecked(false);
         fanAnimation->stop();
     }
