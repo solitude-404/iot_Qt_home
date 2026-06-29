@@ -24,6 +24,7 @@ public:
 
 signals:
     void backToHome();
+    void doorOpened();
 
 private slots:
     void openDoor();

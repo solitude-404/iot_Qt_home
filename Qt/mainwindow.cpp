@@ -138,6 +138,8 @@ MainWindow::MainWindow(QWidget *parent)
         ui->stackedWidget->setCurrentWidget(homePage);
     });
 
+    connect(cameraPage, &CameraWidget::doorOpened, homePage, &HomePage::openDoorOnly);
+
 
     // 刷新界面显示
     updateThresholdUI();
@@ -632,18 +634,27 @@ void MainWindow::loadTempHistory()
 // ======================
 void MainWindow::on_btnComfortMode_clicked()
 {
+    homePage->setAirTemp(26);
+    homePage->setLightIntensity(50);
+    homePage->setCurtain(true);
     QMessageBox::information(this, "模式", "✅ 舒适模式已开启\n温度：26℃\n灯光：50%\n窗帘：打开\n电视：关闭");
     DBHelper::addOperationLog("模式切换", "切换至舒适模式", "成功");
 }
 
 void MainWindow::on_btnSleepMode_clicked()
 {
+    homePage->setAirTemp(24);
+    homePage->setLightIntensity(0);
+    homePage->setCurtain(false);
     QMessageBox::information(this, "模式", "✅ 睡眠模式已开启\n温度：24℃\n灯光：关闭\n窗帘：关闭\n电视：关闭");
     DBHelper::addOperationLog("模式切换", "切换至睡眠模式", "成功");
 }
 
 void MainWindow::on_btnCinemaMode_clicked()
 {
+    homePage->setAirTemp(25);
+    homePage->setLightIntensity(0);
+    homePage->setCurtain(false);
     QMessageBox::information(this, "模式", "✅ 观影模式已开启\n温度：25℃\n灯光：关闭\n窗帘：关闭\n电视：打开");
     DBHelper::addOperationLog("模式切换", "切换至观影模式", "成功");
 }

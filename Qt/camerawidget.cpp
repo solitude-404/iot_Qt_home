@@ -208,9 +208,7 @@ void CameraWidget::onCameraChanged(int index)
 
 void CameraWidget::openDoor()
 {
-
-    QMessageBox::information(this, "提示", "门锁已打开！");
-    DBHelper::addOperationLog("门锁", "远程开门", "成功");
+    emit doorOpened();
 }
 
 void CameraWidget::hangUp()
